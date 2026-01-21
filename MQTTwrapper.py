@@ -1,11 +1,13 @@
 import paho.mqtt.client as mqtt
 import json
 
+
 class MQTTSender:
-    def __init__(self, broker_address, topic):
-        self.client = mqtt.Client(client_id="WeatherStation")
+    def __init__(self, broker_address, topic, client_id):
+        self.client = mqtt.Client(client_id=client_id)
         self.broker_address = broker_address
         self.topic = topic
+        self.station_id = client_id
     
     def connect(self):
         try:
@@ -19,6 +21,7 @@ class MQTTSender:
     
     def send_message(self, data_dict):
         try:
+            data_dict['station_id'] = self.station_id
             payload = json.dumps(data_dict)
             result = self.client.publish(self.topic, payload, qos=1)
             result.wait_for_publish()  
@@ -36,13 +39,13 @@ class MQTTSender:
         self.client.disconnect()
 
 class MQTTReceiver:
-    def __init__(self, broker_address, topic):
-        self.client = mqtt.Client(client_id="WeatherDisplay")
+    def __init__(self, broker_address, topic, client_id="WeatherDisplay"):
+        self.client = mqtt.Client(client_id=client_id)
         self.broker_address = broker_address
         self.topic = topic
         self.on_message_callback = None
     
-    def _on_connect(self, client, rc):
+    def _on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             print("Connected to broker!")
             client.subscribe(self.topic, qos=1)  
