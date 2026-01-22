@@ -1,11 +1,14 @@
 import paho.mqtt.client as mqtt
 import json
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
 class MQTTSender:
-    def __init__(self, broker_address, topic, client_id):
+    def __init__(self, topic, client_id):
         self.client = mqtt.Client(client_id=client_id)
-        self.broker_address = broker_address
+        self.broker_address = os.getenv("MQTT_BROKER_ADDRESS", "localhost") 
         self.topic = topic
         self.station_id = client_id
     
@@ -21,15 +24,18 @@ class MQTTSender:
     
     def send_message(self, data_dict):
         try:
+            if not self.client.is_connected():
+                return False
+
             data_dict['station_id'] = self.station_id
             payload = json.dumps(data_dict)
-            result = self.client.publish(self.topic, payload, qos=1)
-            result.wait_for_publish()  
+            result = self.client.publish(self.topic, payload, qos=1)  
             
-            if result.is_published():
-                print(f"Message sent to topic {self.topic}: {payload}")
+            if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                print(f"Message queued for {self.topic}: {payload}")
                 return True
-            return False
+            else:
+                return False
         except Exception as e:
             print(f"Send error: {e}")
             return False
@@ -39,9 +45,9 @@ class MQTTSender:
         self.client.disconnect()
 
 class MQTTReceiver:
-    def __init__(self, broker_address, topic, client_id="WeatherDisplay"):
+    def __init__(self, topic, client_id="WeatherDisplay"):
         self.client = mqtt.Client(client_id=client_id)
-        self.broker_address = broker_address
+        self.broker_address = os.getenv("MQTT_BROKER_ADDRESS", "localhost") 
         self.topic = topic
         self.on_message_callback = None
     
