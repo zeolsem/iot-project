@@ -6,9 +6,9 @@ import os
 load_dotenv()
 
 class MQTTSender:
-    def __init__(self, topic, client_id):
+    def __init__(self, *, topic: str, client_id: str, broker_address: str | None = None):
         self.client = mqtt.Client(client_id=client_id)
-        self.broker_address = os.getenv("MQTT_BROKER_ADDRESS", "localhost") 
+        self.broker_address = broker_address or os.getenv("MQTT_BROKER_ADDRESS", "localhost") 
         self.topic = topic
         self.station_id = client_id
     
@@ -45,15 +45,15 @@ class MQTTSender:
         self.client.disconnect()
 
 class MQTTReceiver:
-    def __init__(self, topic, client_id="WeatherDisplay"):
+    def __init__(self, *, topic: str, client_id: str = "WeatherDisplay", broker_address: str | None = None):
         self.client = mqtt.Client(client_id=client_id)
-        self.broker_address = os.getenv("MQTT_BROKER_ADDRESS", "localhost") 
+        self.broker_address = broker_address or os.getenv("MQTT_BROKER_ADDRESS", "localhost") 
         self.topic = topic
         self.on_message_callback = None
     
     def _on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            print("Connected to broker!")
+            print(f"[OK] Subscribed to topic: {self.topic}")
             client.subscribe(self.topic, qos=1)  
         else:
             print(f"Connection failed: {rc}")
@@ -85,4 +85,4 @@ class MQTTReceiver:
     def disconnect(self):
         self.client.loop_stop()
         self.client.disconnect()
-        print(f"Disconnected from MQTT broker")
+        print("[OK] Disconnected from MQTT")

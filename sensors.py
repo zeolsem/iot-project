@@ -93,9 +93,10 @@ class DHT11Sensor:
 class BME280Sensor:
     """BME280 temperature and humidity sensor wrapper (I2C)."""
     
-    def __init__(self):
+    def __init__(self, address: int = 0x76):
         self._device = None
         self._i2c = None
+        self._address = address
         
     def init(self) -> bool:
         """Initialize the BME280 sensor via I2C."""
@@ -104,8 +105,8 @@ class BME280Sensor:
             import adafruit_bme280.advanced as adafruit_bme280
             
             self._i2c = board.I2C()
-            self._device = adafruit_bme280.Adafruit_BME280_I2C(self._i2c)
-            print("[BME280] Sensor initialized successfully")
+            self._device = adafruit_bme280.Adafruit_BME280_I2C(self._i2c, address=self._address)
+            print(f"[BME280] Sensor initialized at I2C address 0x{self._address:02x}")
             return True
         except ImportError as e:
             print(f"[BME280 ERROR] Missing package: {e}")
@@ -113,6 +114,7 @@ class BME280Sensor:
             return False
         except Exception as e:
             print(f"[BME280 ERROR] Failed to initialize: {e}")
+            print("[BME280 HINT] Check I2C address with: i2cdetect -y 1")
             return False
     
     def read(self) -> tuple[float | None, float | None]:
