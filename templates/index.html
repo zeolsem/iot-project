@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pl">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IoT Weather Dashboard</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .chart-container {
+            height: 500px;
+            /* Wyższe wykresy */
+            width: 100%;
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, #004e92, #000428);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-refresh {
+            background-color: #00d2ff;
+            color: #000;
+            font-weight: 500;
+            border: none;
+        }
+
+        .btn-refresh:hover {
+            background-color: #3a7bd5;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-dark mb-4">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1 ms-3">☁️ IoT Weather Dashboard</span>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <div class="card p-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-secondary">Wybierz Stację:</label>
+                    <select id="stationSelect" class="form-select">
+                        <option value="all">Wszystkie stacje</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-secondary">Zakres Czasu:</label>
+                    <select id="rangeSelect" class="form-select">
+                        <option value="1m" selected>Ostatnia minuta</option>
+                        <option value="5m">Ostatnie 5 minut</option>
+                        <option value="10m">Ostatnie 10 minut</option>
+                        <option value="all">Wszystkie dane</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-6">
+                <div class="card stat-card bg-white p-3 border-start border-5 border-danger">
+                    <h6 class="text-secondary text-uppercase ls-1">Średnia Temperatura</h6>
+                    <h2 class="display-6 fw-bold text-dark" id="avgTemp">-- °C</h2>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card stat-card bg-white p-3 border-start border-5 border-primary">
+                    <h6 class="text-secondary text-uppercase ls-1">Średnia Wilgotność</h6>
+                    <h2 class="display-6 fw-bold text-dark" id="avgHum">-- %</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-3">
+            <h5 class="card-title ps-2 text-secondary">Temperatura</h5>
+            <div id="tempPlot" class="chart-container"></div>
+        </div>
+
+        <div class="card p-3">
+            <h5 class="card-title ps-2 text-secondary">Wilgotność</h5>
+            <div id="humPlot" class="chart-container"></div>
+        </div>
+
+        <footer class="text-center text-secondary mt-4 mb-4 small">
+            IoT Project Group &copy; 2026
+        </footer>
+
+    </div>
+
+    <script src="/static/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
