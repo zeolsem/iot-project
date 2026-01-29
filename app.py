@@ -38,10 +38,8 @@ def parse_range_param(range_str: str):
         days = int(range_str[:-1])
         start = end - timedelta(days=days)
     elif range_str == 'all':
-        # None oznacza brak ograniczenia
         return None, end.strftime("%Y-%m-%d %H:%M:%S")
     else:
-        # próbujemy sparsować jako ISO datę start; end może być podany przez param end
         try:
             start = datetime.fromisoformat(range_str)
         except Exception:
@@ -99,7 +97,6 @@ def api_readings():
 
 @app.route('/api/average')
 def api_average():
-    # oblicza średnią temperaturę i wilgotność w zadanym zakresie
     range_q = request.args.get('range', '1m')
     start_end = parse_range_param(range_q)
     if start_end is None:
