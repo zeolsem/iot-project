@@ -129,8 +129,10 @@ class WeatherDatabase:
 
     def _merge_temp_hum(self, temps, hums):
         merged = {}
+        
         for station_id, sensor_id, val, ts in temps:
-            key = (station_id, ts)
+            key = (station_id, sensor_id, ts)
+            
             merged.setdefault(
                 key,
                 {
@@ -146,7 +148,8 @@ class WeatherDatabase:
             merged[key]['temperature_sensor_id'] = sensor_id
 
         for station_id, sensor_id, val, ts in hums:
-            key = (station_id, ts)
+            key = (station_id, sensor_id, ts)
+            
             merged.setdefault(
                 key,
                 {
@@ -161,7 +164,6 @@ class WeatherDatabase:
             merged[key]['humidity'] = val
             merged[key]['humidity_sensor_id'] = sensor_id
 
-        # return sorted ascending by timestamp
         return sorted(merged.values(), key=lambda x: x['timestamp'])
 
     def get_readings(self, station_id=None, start_time=None, end_time=None):
