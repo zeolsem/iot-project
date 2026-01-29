@@ -110,9 +110,6 @@ async function refresh() {
 
     } catch (error) {
         console.error("Błąd:", error);
-    } finally {
-        btn.textContent = originalText;
-        btn.disabled = false;
     }
 }
 
