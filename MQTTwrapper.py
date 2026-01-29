@@ -33,7 +33,7 @@ class MQTTSender:
             result = self.client.publish(self.topic, payload, qos=1)  
             
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                print(f"Message queued for {self.topic}: {payload}")
+                print(f"Message published to {self.topic}: {payload}")
                 return True
             else:
                 return False

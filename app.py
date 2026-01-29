@@ -3,13 +3,15 @@ from flask import Flask, jsonify, request, render_template, send_from_directory
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import os
+import logging
 from dotenv import load_dotenv
 
 from WeatherDatabase import WeatherDatabase
 
 load_dotenv()
 
-DB_PATH = os.getenv('WEATHER_DB_PATH', 'weather_data.db')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.getenv('WEATHER_DB_PATH', os.path.join(BASE_DIR, 'weather_data.db'))
 LISTEN_HOST = os.getenv('HOST', '0.0.0.0')
 LISTEN_PORT = int(os.getenv('PORT', 5000))
 
@@ -17,6 +19,8 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 
 db = WeatherDatabase(db_file=DB_PATH)
+logging.basicConfig(level=logging.INFO, format='[flask] %(message)s')
+logging.info(f"Starting Flask with DB_PATH={DB_PATH}")
 
 
 def parse_range_param(range_str: str):
@@ -54,6 +58,7 @@ def index():
 @app.route('/api/stations')
 def api_stations():
     station_ids = db.get_station_ids()
+    logging.info(f"/api/stations -> {len(station_ids)} stations (DB={DB_PATH})")
     return jsonify({'stations': station_ids})
 
 
@@ -81,10 +86,14 @@ def api_readings():
             'station_id': r['station_id'],
             'temperature': r.get('temperature'),
             'humidity': r.get('humidity'),
+            'temperature_sensor_id': r.get('temperature_sensor_id'),
+            'humidity_sensor_id': r.get('humidity_sensor_id'),
             'timestamp': r['timestamp'],
         }
         for r in rows
     ]
+    counts = db.get_counts()
+    logging.info(f"/api/readings station={station} range={range_q} -> {len(shaped)} rows; DB={DB_PATH} counts={counts}")
     return jsonify({'readings': shaped})
 
 
@@ -103,6 +112,9 @@ def api_average():
 
     temps = [r.get('temperature') for r in rows if r.get('temperature') is not None]
     hums = [r.get('humidity') for r in rows if r.get('humidity') is not None]
+
+    counts = db.get_counts()
+    logging.info(f"/api/average range={range_q} rows={len(rows)} temps={len(temps)} hums={len(hums)} DB={DB_PATH} counts={counts}")
 
     avg_t = sum(temps) / len(temps) if temps else None
     avg_h = sum(hums) / len(hums) if hums else None

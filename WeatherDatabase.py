@@ -203,3 +203,13 @@ class WeatherDatabase:
         hums = {r[0] for r in cursor.fetchall()}
         conn.close()
         return sorted(temps.union(hums))
+
+    def get_counts(self):
+        conn = sqlite3.connect(self.db_file)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM temperature_measurements')
+        t = cursor.fetchone()[0]
+        cursor.execute('SELECT COUNT(*) FROM humidity_measurements')
+        h = cursor.fetchone()[0]
+        conn.close()
+        return {'temperature': t, 'humidity': h}

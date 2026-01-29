@@ -98,11 +98,19 @@ def main():
     load_dotenv()
 
     station_id = os.getenv("STATION_ID", socket.gethostname())
-    sensor_id = os.getenv("SENSOR_ID", station_id)
     sensor_combo = os.getenv("SENSOR_COMBO", "dht11_ds18").lower()
     topic = "weather/readings"
 
     use_bme = sensor_combo == "bme280_ds18"
+
+    # Sensor IDs for labeling per-sensor series
+    default_temp_id = "ds18b20"
+    default_aux_temp_id = "bme280" if use_bme else "dht11"
+    default_hum_id = "bme280" if use_bme else "dht11"
+
+    temp_sensor_id_ds = os.getenv("TEMP_SENSOR_ID", f"{station_id}-{default_temp_id}")
+    temp_sensor_id_aux = os.getenv("AUX_TEMP_SENSOR_ID", f"{station_id}-{default_aux_temp_id}")
+    hum_sensor_id = os.getenv("HUM_SENSOR_ID", f"{station_id}-{default_hum_id}")
 
     dht = init_dht() if not use_bme else None
     bme = init_bme280() if use_bme else None
@@ -127,19 +135,36 @@ def main():
             else:
                 aux_temp, hum = read_dht(dht)
 
-            temperature = choose_temperature(ds_temp, aux_temp)
-            humidity = hum
-
-            if temperature is not None or humidity is not None:
-                tx.send_message({
-                    "sensor_id": sensor_id,
-                    "temperature": temperature,
-                    "humidity": humidity,
+            measurements = []
+            if ds_temp is not None:
+                measurements.append({
+                    "type": "temperature",
+                    "sensor_id": temp_sensor_id_ds,
+                    "value": ds_temp,
                 })
-            else:
-                print("[sender] skip send, missing data (temp and humidity None)")
+            if aux_temp is not None:
+                measurements.append({
+                    "type": "temperature",
+                    "sensor_id": temp_sensor_id_aux,
+                    "value": aux_temp,
+                })
+            if hum is not None:
+                measurements.append({
+                    "type": "humidity",
+                    "sensor_id": hum_sensor_id,
+                    "value": hum,
+                })
 
-            time.sleep(1)
+            if measurements:
+                payload = {
+                    "station_id": station_id,
+                    "measurements": measurements,
+                }
+                tx.send_message(payload)
+            else:
+                print("[sender] skip send, missing data (no measurements)")
+
+            time.sleep(3)
     except KeyboardInterrupt:
         print("\n[sender] stopping...")
     finally:

@@ -12,7 +12,7 @@ const colorPalette = [
     '#17becf'  // Cyjan
 ];
 
-const stationColorMap = {};
+const seriesColorMap = {};
 
 async function fetchJson(url) {
     const r = await fetch(url);
@@ -25,13 +25,11 @@ async function loadStations() {
 
     sel.innerHTML = '<option value="all">Wszystkie stacje</option>';
 
-    data.stations.forEach((s, index) => {
+    data.stations.forEach((s) => {
         const opt = document.createElement('option');
         opt.value = s;
         opt.textContent = s;
         sel.appendChild(opt);
-
-        stationColorMap[s] = colorPalette[index % colorPalette.length];
     });
 }
 
@@ -44,13 +42,23 @@ async function refresh() {
         const payload = await fetchJson(apiUrl);
         const readings = payload.readings;
 
-        // Grupowanie po station_id
-        const groups = {};
+        // Grupowanie po (station_id, sensor_id) osobno dla temp i hum
+        const tempGroups = {};
+        const humGroups = {};
+
         readings.forEach(r => {
-            if (!groups[r.station_id]) groups[r.station_id] = { x: [], t: [], h: [] };
-            groups[r.station_id].x.push(r.timestamp);
-            groups[r.station_id].t.push(r.temperature);
-            groups[r.station_id].h.push(r.humidity);
+            if (r.temperature !== null && r.temperature !== undefined) {
+                const key = `${r.station_id}|temp|${r.temperature_sensor_id || 'unknown'}`;
+                if (!tempGroups[key]) tempGroups[key] = { x: [], y: [], label: `${r.temperature_sensor_id || 'temp'}` };
+                tempGroups[key].x.push(r.timestamp);
+                tempGroups[key].y.push(r.temperature);
+            }
+            if (r.humidity !== null && r.humidity !== undefined) {
+                const key = `${r.station_id}|hum|${r.humidity_sensor_id || 'unknown'}`;
+                if (!humGroups[key]) humGroups[key] = { x: [], y: [], label: `${r.humidity_sensor_id || 'hum'}` };
+                humGroups[key].x.push(r.timestamp);
+                humGroups[key].y.push(r.humidity);
+            }
         });
 
         const commonLayout = {
@@ -65,16 +73,16 @@ async function refresh() {
         };
 
         // TEMPERATURA
-        const tempTraces = Object.keys(groups).map(k => ({
-            x: groups[k].x.map(s => new Date(s)),
-            y: groups[k].t,
+        const tempTraces = Object.keys(tempGroups).map((key, idx) => ({
+            x: tempGroups[key].x.map(s => new Date(s)),
+            y: tempGroups[key].y,
             mode: 'lines',
             line: {
                 width: 3,
                 shape: 'spline',
-                color: stationColorMap[k]
+                color: seriesColorMap[key] || (seriesColorMap[key] = colorPalette[idx % colorPalette.length])
             },
-            name: k
+            name: tempGroups[key].label
         }));
 
         Plotly.react('tempPlot', tempTraces, {
@@ -83,16 +91,16 @@ async function refresh() {
         }, { responsive: true });
 
         // WILGOTNOŚĆ
-        const humTraces = Object.keys(groups).map(k => ({
-            x: groups[k].x.map(s => new Date(s)),
-            y: groups[k].h,
+        const humTraces = Object.keys(humGroups).map((key, idx) => ({
+            x: humGroups[key].x.map(s => new Date(s)),
+            y: humGroups[key].y,
             mode: 'lines',
             line: {
                 width: 3,
                 shape: 'spline',
-                color: stationColorMap[k]
+                color: seriesColorMap[key] || (seriesColorMap[key] = colorPalette[idx % colorPalette.length])
             },
-            name: k
+            name: humGroups[key].label
         }));
 
         Plotly.react('humPlot', humTraces, {
@@ -119,6 +127,6 @@ window.addEventListener('load', async () => {
     document.getElementById('stationSelect').addEventListener('change', refresh);
     document.getElementById('rangeSelect').addEventListener('change', refresh);
 
-    setInterval(refresh, 1000);
+    setInterval(refresh, 3000);
     refresh();
 });
