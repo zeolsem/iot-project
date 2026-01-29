@@ -164,7 +164,7 @@ def main():
             else:
                 print("[sender] skip send, missing data (no measurements)")
 
-            time.sleep(3)
+            time.sleep(1)
     except KeyboardInterrupt:
         print("\n[sender] stopping...")
     finally:

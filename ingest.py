@@ -13,8 +13,8 @@ def main():
     db_path = os.getenv("WEATHER_DB_PATH", os.path.join(BASE_DIR, "weather_data.db"))
     topic = os.getenv("MQTT_TOPIC", "weather/readings")
     client_id = os.getenv("MQTT_CLIENT_ID", "central-hub")
-    flush_every_s = float(os.getenv("INGEST_FLUSH_INTERVAL", "1.0"))
-    flush_batch = int(os.getenv("INGEST_FLUSH_BATCH", "50"))
+    flush_every_s = float(os.getenv("INGEST_FLUSH_INTERVAL", "0"))
+    flush_batch = int(os.getenv("INGEST_FLUSH_BATCH", "1"))
 
     db = WeatherDatabase(db_file=db_path)
     rx = MQTTReceiver(topic=topic, client_id=client_id)
@@ -64,13 +64,15 @@ def main():
 
     try:
         while True:
-            time.sleep(0.2)
+            time.sleep(0.05)
             now = time.time()
             flush_now = False
             with buf_lock:
                 if len(buffer) >= flush_batch:
                     flush_now = True
-                elif now - last_flush >= flush_every_s and buffer:
+                elif (flush_every_s <= 0 and buffer):
+                    flush_now = True
+                elif flush_every_s > 0 and now - last_flush >= flush_every_s and buffer:
                     flush_now = True
                 if flush_now:
                     batch = buffer[:]

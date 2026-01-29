@@ -127,6 +127,6 @@ window.addEventListener('load', async () => {
     document.getElementById('stationSelect').addEventListener('change', refresh);
     document.getElementById('rangeSelect').addEventListener('change', refresh);
 
-    setInterval(refresh, 3000);
+    setInterval(refresh, 1000);
     refresh();
 });
