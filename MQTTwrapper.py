@@ -30,7 +30,7 @@ class MQTTSender:
 
             data_dict['station_id'] = self.station_id
             payload = json.dumps(data_dict)
-            result = self.client.publish(self.topic, payload, qos=1)  
+            result = self.client.publish(self.topic, payload, qos=0)  
             
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
                 print(f"Message published to {self.topic}: {payload}")

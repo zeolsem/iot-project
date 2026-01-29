@@ -20,7 +20,7 @@ except Exception:
     W1ThermSensor = None
 
 try:
-    import adafruit_bme280
+    import adafruit_bme280.basic as adafruit_bme280
     import busio
 except Exception:
     adafruit_bme280 = None
@@ -54,9 +54,9 @@ def init_bme280() -> Optional[object]:
         return None
     try:
         i2c = busio.I2C(board.SCL, board.SDA)
-        return adafruit_bme280.Adafruit_BME280_I2C(i2c)
-    except Exception:
-        print("[sender] BME280 init failed (check I2C wiring)")
+        return adafruit_bme280.Adafruit_BME280_I2C(i2c, address=0x76)
+    except Exception as e:
+        print(f"[sender] BME280 init failed: {e}")
         return None
 
 
