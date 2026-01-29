@@ -8,15 +8,16 @@ load_dotenv()
 class MQTTSender:
     def __init__(self, topic, client_id):
         self.client = mqtt.Client(client_id=client_id)
-        self.broker_address = os.getenv("MQTT_BROKER_ADDRESS", "localhost") 
+        self.broker_address = os.getenv("MQTT_BROKER_ADDRESS", "localhost")
+        self.broker_port = int(os.getenv("MQTT_BROKER_PORT", "1883"))
         self.topic = topic
         self.station_id = client_id
     
     def connect(self):
         try:
-            self.client.connect(self.broker_address)
+            self.client.connect(self.broker_address, self.broker_port)
             self.client.loop_start()
-            print(f"Connected to MQTT broker at {self.broker_address}")
+            print(f"Connected to MQTT broker at {self.broker_address}:{self.broker_port}")
             return True
         except Exception as e:
             print(f"Connection error: {e}")
@@ -32,7 +33,7 @@ class MQTTSender:
             result = self.client.publish(self.topic, payload, qos=1)  
             
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                print(f"Message queued for {self.topic}: {payload}")
+                print(f"Message published to {self.topic}: {payload}")
                 return True
             else:
                 return False
@@ -47,7 +48,8 @@ class MQTTSender:
 class MQTTReceiver:
     def __init__(self, topic, client_id="WeatherDisplay"):
         self.client = mqtt.Client(client_id=client_id)
-        self.broker_address = os.getenv("MQTT_BROKER_ADDRESS", "localhost") 
+        self.broker_address = os.getenv("MQTT_BROKER_ADDRESS", "localhost")
+        self.broker_port = int(os.getenv("MQTT_BROKER_PORT", "1883"))
         self.topic = topic
         self.on_message_callback = None
     
@@ -64,7 +66,7 @@ class MQTTReceiver:
             self.client.on_connect = self._on_connect  
             self.client.on_message = self._internal_on_message
             
-            self.client.connect(self.broker_address)
+            self.client.connect(self.broker_address, self.broker_port)
             self.client.loop_start()
             return True
         except Exception as e:

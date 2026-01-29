@@ -3,13 +3,15 @@ from flask import Flask, jsonify, request, render_template, send_from_directory
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import os
+import logging
 from dotenv import load_dotenv
 
 from WeatherDatabase import WeatherDatabase
 
 load_dotenv()
 
-DB_PATH = os.getenv('WEATHER_DB_PATH', 'weather_data.db')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.getenv('WEATHER_DB_PATH', os.path.join(BASE_DIR, 'weather_data.db'))
 LISTEN_HOST = os.getenv('HOST', '0.0.0.0')
 LISTEN_PORT = int(os.getenv('PORT', 5000))
 
@@ -17,6 +19,8 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 
 db = WeatherDatabase(db_file=DB_PATH)
+logging.basicConfig(level=logging.INFO, format='[flask] %(message)s')
+logging.info(f"Starting Flask with DB_PATH={DB_PATH}")
 
 
 def parse_range_param(range_str: str):
@@ -53,9 +57,8 @@ def index():
 
 @app.route('/api/stations')
 def api_stations():
-    # zwraca listę unikalnych station_id
-    rows = db.get_all_readings()
-    station_ids = sorted({r[1] for r in rows})  # r[1] to station_id według definicji tabeli
+    station_ids = db.get_station_ids()
+    logging.info(f"/api/stations -> {len(station_ids)} stations (DB={DB_PATH})")
     return jsonify({'stations': station_ids})
 
 
@@ -71,36 +74,27 @@ def api_readings():
     else:
         start_time, end_time = start_end
 
-    def row_to_obj(r):
-        # r zgodnie z CREATE TABLE: id, station_id, temperature, humidity, timestamp
-        return {
-            'id': r[0],
-            'station_id': r[1],
-            'temperature': r[2],
-            'humidity': r[3],
-            'timestamp': r[4]
-        }
-
-    results = []
     if station and station != 'all':
-        if start_time:
-            rows = db.get_readings_in_time_range(station, start_time, end_time)
-        else:
-            rows = db.get_readings_by_station(station)
-        results = [row_to_obj(r) for r in rows]
+        rows = db.get_readings(station_id=station, start_time=start_time, end_time=end_time)
     else:
-        # dla wszystkich stacji: jeśli range ograniczony -> z każdego station_id pobierz w range
-        if start_time:
-            rows = db.get_all_readings()
-            filtered = [r for r in rows if start_time <= r[4] <= end_time]
-            results = [row_to_obj(r) for r in filtered]
-        else:
-            rows = db.get_all_readings()
-            results = [row_to_obj(r) for r in rows]
+        rows = db.get_readings(start_time=start_time, end_time=end_time)
 
-    # sortowanie po czasie rosnąco (przydatne do wykresów)
-    results.sort(key=lambda x: x['timestamp'])
-    return jsonify({'readings': results})
+    rows.sort(key=lambda x: x['timestamp'])
+    # keep response shape compatible with frontend
+    shaped = [
+        {
+            'station_id': r['station_id'],
+            'temperature': r.get('temperature'),
+            'humidity': r.get('humidity'),
+            'temperature_sensor_id': r.get('temperature_sensor_id'),
+            'humidity_sensor_id': r.get('humidity_sensor_id'),
+            'timestamp': r['timestamp'],
+        }
+        for r in rows
+    ]
+    counts = db.get_counts()
+    logging.info(f"/api/readings station={station} range={range_q} -> {len(shaped)} rows; DB={DB_PATH} counts={counts}")
+    return jsonify({'readings': shaped})
 
 
 @app.route('/api/average')
@@ -114,12 +108,13 @@ def api_average():
     else:
         start_time, end_time = start_end
 
-    rows = db.get_all_readings()
-    if start_time:
-        rows = [r for r in rows if start_time <= r[4] <= end_time]
+    rows = db.get_readings(start_time=start_time, end_time=end_time)
 
-    temps = [r[2] for r in rows if r[2] is not None]
-    hums = [r[3] for r in rows if r[3] is not None]
+    temps = [r.get('temperature') for r in rows if r.get('temperature') is not None]
+    hums = [r.get('humidity') for r in rows if r.get('humidity') is not None]
+
+    counts = db.get_counts()
+    logging.info(f"/api/average range={range_q} rows={len(rows)} temps={len(temps)} hums={len(hums)} DB={DB_PATH} counts={counts}")
 
     avg_t = sum(temps) / len(temps) if temps else None
     avg_h = sum(hums) / len(hums) if hums else None
