@@ -43,7 +43,6 @@ def parse_range_param(range_str: str):
         try:
             start = datetime.fromisoformat(range_str)
         except Exception:
-            # fallback do 1h
             start = end - timedelta(hours=1)
     return start.strftime("%Y-%m-%d %H:%M:%S"), end.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -62,7 +61,7 @@ def api_stations():
 
 @app.route('/api/readings')
 def api_readings():
-    station = request.args.get('station')  # jeśli None lub 'all' -> wszystkie
+    station = request.args.get('station') 
     range_q = request.args.get('range', '1m')
     start_end = parse_range_param(range_q)
 
@@ -78,7 +77,6 @@ def api_readings():
         rows = db.get_readings(start_time=start_time, end_time=end_time)
 
     rows.sort(key=lambda x: x['timestamp'])
-    # keep response shape compatible with frontend
     shaped = [
         {
             'station_id': r['station_id'],
