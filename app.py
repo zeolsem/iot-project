@@ -38,14 +38,11 @@ def parse_range_param(range_str: str):
         days = int(range_str[:-1])
         start = end - timedelta(days=days)
     elif range_str == 'all':
-        # None oznacza brak ograniczenia
         return None, end.strftime("%Y-%m-%d %H:%M:%S")
     else:
-        # próbujemy sparsować jako ISO datę start; end może być podany przez param end
         try:
             start = datetime.fromisoformat(range_str)
         except Exception:
-            # fallback do 1h
             start = end - timedelta(hours=1)
     return start.strftime("%Y-%m-%d %H:%M:%S"), end.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -64,7 +61,7 @@ def api_stations():
 
 @app.route('/api/readings')
 def api_readings():
-    station = request.args.get('station')  # jeśli None lub 'all' -> wszystkie
+    station = request.args.get('station')  
     range_q = request.args.get('range', '1m')
     start_end = parse_range_param(range_q)
 
@@ -80,7 +77,6 @@ def api_readings():
         rows = db.get_readings(start_time=start_time, end_time=end_time)
 
     rows.sort(key=lambda x: x['timestamp'])
-    # keep response shape compatible with frontend
     shaped = [
         {
             'station_id': r['station_id'],
@@ -99,7 +95,6 @@ def api_readings():
 
 @app.route('/api/average')
 def api_average():
-    # oblicza średnią temperaturę i wilgotność w zadanym zakresie
     range_q = request.args.get('range', '1m')
     start_end = parse_range_param(range_q)
     if start_end is None:
